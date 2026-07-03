@@ -1,0 +1,86 @@
+// Schema bazei de date FideliX
+// Generator + sursa de date (SQLite - un singur fisier local, fara configurare server)
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ---------- Utilizatori (clienti) ----------
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  password     String // hash bcrypt, niciodata in clar
+  name         String
+  memberId     String   @unique // ex. JC-204815
+  points       Int      @default(0)
+  tier         String   @default("Bronze") // Bronze | Silver | Gold
+  visits       Int      @default(0)
+  role         String   @default("client") // client | admin
+  createdAt    DateTime @default(now())
+
+  redemptions  Redemption[]
+  purchases    Purchase[]
+  sessions     Session[]
+}
+
+// ---------- Sesiuni (autentificare bazata pe token) ----------
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+}
+
+// ---------- Catalog recompense ----------
+model Reward {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  cost        Int
+  icon        String
+  category    String
+  active      Boolean  @default(true)
+
+  redemptions Redemption[]
+}
+
+// ---------- Revendicari de recompense (tranzactii de puncte) ----------
+model Redemption {
+  id         String   @id @default(cuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  rewardId   Int
+  reward     Reward   @relation(fields: [rewardId], references: [id])
+  pointsSpent Int
+  createdAt  DateTime @default(now())
+}
+
+// ---------- Istoric achizitii (acumulare puncte) ----------
+model Purchase {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items     String
+  total     Float
+  points    Int
+  createdAt DateTime @default(now())
+}
+
+// ---------- Oferte personalizate ----------
+model Offer {
+  id          Int      @id @default(autoincrement())
+  title       String
+  description String
+  discount    Int
+  expiresAt   String
+  tag         String
+  badge       String?
+  active      Boolean  @default(true)
+}
